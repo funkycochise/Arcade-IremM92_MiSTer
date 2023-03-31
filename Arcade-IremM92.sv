@@ -432,20 +432,55 @@ always @(posedge clk_sys) begin
         dip_sw[ioctl_addr[2:0]] <= ioctl_dout;
 end
 
+wire key_p1_u, key_p1_d, key_p1_l, key_p1_r, key_p1_a, key_p1_b, key_p1_x, key_p1_y;
+wire key_p2_u, key_p2_d, key_p2_l, key_p2_r, key_p2_a, key_p2_b, key_p2_x, key_p2_y;
+wire key_start1,key_start2,key_coin1,key_coin2,key_service,key_pause;
 
 //////////////////  Arcade Buttons/Interfaces   ///////////////////////////
                        /*     A               B               X               Y               U               D               L               R    */
-wire [7:0] p1_input = { joystick_0[4], joystick_0[5], joystick_0[6], joystick_0[7], joystick_0[3], joystick_0[2], joystick_0[1], joystick_0[0] };
-wire [7:0] p2_input = { joystick_1[4], joystick_1[5], joystick_1[6], joystick_1[7], joystick_1[3], joystick_1[2], joystick_1[1], joystick_1[0] };
+wire [7:0] p1_input = { joystick_0[4] | key_p1_a, joystick_0[5] | key_p1_b, joystick_0[6] | key_p1_x, joystick_0[7] | key_p1_y, joystick_0[3] | | key_p1_u, joystick_0[2] | key_p1_d, joystick_0[1] | | key_p1_l, joystick_0[0] | key_p1_r };
+wire [7:0] p2_input = { joystick_1[4] | key_p2_a, joystick_1[5] | key_p2_b, joystick_1[6] | key_p2_x, joystick_1[7] | key_p2_y, joystick_1[3] | | key_p2_u, joystick_1[2] | key_p2_d, joystick_1[1] | | key_p2_l, joystick_1[0] | key_p2_r };
 wire [7:0] p3_input = { joystick_2[4], joystick_2[5], joystick_2[6], joystick_2[7], joystick_2[3], joystick_2[2], joystick_2[1], joystick_2[0] };
 wire [7:0] p4_input = { joystick_3[4], joystick_3[5], joystick_3[6], joystick_3[7], joystick_3[3], joystick_3[2], joystick_3[1], joystick_3[0] };
 
 //Start/coin
-wire m_start1   = joystick_0[8];
-wire m_start2   = joystick_1[8] | joystick_combined[10];
-wire m_coin1    = joystick_combined[9];
+wire m_start1   = joystick_0[8] | key_start1;
+wire m_start2   = joystick_1[8] | joystick_combined[10] | key_start2;
+wire m_coin1    = joystick_combined[9] | key_coin1 | key_coin2;
 wire m_coin2    = 0;
-wire m_pause    = joystick_combined[11];
+wire m_pause    = joystick_combined[11] | key_pause;
+
+
+wire pressed = ps2_key[9];
+always @(posedge clk_sys) begin
+	reg old_state;
+
+	old_state <= ps2_key[10];
+	if(old_state ^ ps2_key[10]) begin
+		casex(ps2_key[8:0])
+			'h016: key_start1   <= pressed; // 1
+			'h01e: key_start2   <= pressed; // 2
+			'h02E: key_coin1    <= pressed; // 5
+			'h036: key_coin2    <= pressed; // 6
+			'h046: key_service  <= pressed; // 9
+
+			'hX75: key_p1_u     <= pressed; // up
+			'hX72: key_p1_d     <= pressed; // down
+			'hX6b: key_p1_l     <= pressed; // left
+			'hX74: key_p1_r     <= pressed; // right
+			'h014: key_p1_a  	  <= pressed; // lctrl
+			'h011: key_p1_b     <= pressed; // lalt
+
+			'h02d: key_p2_u     <= pressed; // r
+			'h02b: key_p2_d     <= pressed; // f
+			'h023: key_p2_l     <= pressed; // d
+			'h034: key_p2_r     <= pressed; // g
+			'h01c: key_p2_a     <= pressed; // a
+			'h01b: key_p2_b     <= pressed; // s
+			'h04d: key_pause    <= pressed; // p
+		endcase
+	end
+end
 
 //////////////////////////////////////////////////////////////////
 
